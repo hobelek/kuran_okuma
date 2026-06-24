@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğrenci Paneli</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f1f2f6; color: #2f3542; padding: 10px; }
+        .container { width: 100%; max-width: 100%; margin: 0 auto; }
+        .header-card { 
+            background: white; padding: 10px 15px; border-radius: 8px; 
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 10px;
+        }
+        .baslik-alani h2 { 
+            color: #1e272e; font-size: 15px; font-weight: 400; line-height: 1.4; margin: 0;
+        }
+        .canli-tarih { 
+            font-size: 11px; color: #7f8c8d; font-weight: 300; display: block; margin-top: 2px;
+        }
+        .table-responsive { 
+            background: white; border-radius: 8px; padding: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); width: 100%;
+        }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th:nth-child(1), td:nth-child(1) { width: 10%; }   /* Numara sütunu genişletildi */
+        th, td { 
+            border: 1px solid #b2bec3 !important; 
+            padding: 4px 1px; 
+            text-align: center; 
+            font-size: 9.5px; 
+            font-weight: 300; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            vertical-align: middle !important;
+        }
+        thead th {
+            background-color: #2c3e50 !important;
+            color: white !important;
+            font-weight: 400 !important;
+            vertical-align: middle !important;
+        }
+        thead tr:last-child th {
+            background-color: #405d78 !important;
+        }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        .hucre-btn { cursor: pointer; transition: background-color 0.2s; user-select: none; }
+        .hucre-btn:hover { background-color: #ffeaa7 !important; }
+        .disabled-click { cursor: not-allowed; opacity: 0.6; pointer-events: none; }
+        .info-box { background: white; padding: 20px; border-radius: 8px; text-align: center; font-size: 13px; color: #57606f; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-card">
+            <div class="baslik-alani">
+                <h2>Okuma Takip Paneli</h2>
+                <span class="canli-tarih">📅 {{ bugun|date:"d F Y, l" }}</span>
+            </div>
+            <div style="text-align: right;">
+                <span class="badge" style="background-color:#ff4757; color:white; padding:4px 10px; border-radius:12px; font-size:11px;">Öğrenci: {{ student.display_number }}</span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th rowspan="2">NUM</th>
+                        <!-- ADI SOYADI sütunu kaldırıldı -->
+                        {% for gun in tarihler %}
+                            <th>{{ gun.tarih.day }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for gun in tarihler %}
+                            <th style="font-size: 8px;">{{ gun.gun_adi }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ogr in sinif_ogrencileri %}
+                    <tr {% if ogr.id == student.id %}style="background-color: #cfe2ff;"{% endif %}>
+                        <td>{{ ogr.display_number }}</td>
+                        <!-- İsim sütunu kaldırıldı -->
+                        {% for gun in tarihler %}
+                            <td class="hucre-btn tik-hucre"
+                                data-ogr-id="{{ ogr.id }}"
+                                data-tarih="{{ gun.tarih|date:'Y-m-d' }}"
+                                {% if ogr.id == student.id and gun.tarih == bugun %} data-editable="true"{% else %} data-editable="false"{% endif %}>
+                                {% with okuma_dict|get_item:ogr.id|get_item:gun.tarih as durum %}
+                                    {% if durum %}🟢{% else %}<span style="opacity: 0.2;">-</span>{% endif %}
+                                {% endwith %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ tarihler|length|add:1 }}">Bu sınıfta öğrenci yok.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const hucreler = document.querySelectorAll('.tik-hucre');
+
+            hucreler.forEach(hucre => {
+                const editable = hucre.getAttribute('data-editable') === 'true';
+                if (!editable) {
+                    hucre.style.cursor = 'default';
+                    hucre.classList.add('disabled-click');
+                    return;
+                }
+                const icerik = hucre.innerText.trim();
+                if (icerik === '🟢') {
+                    hucre.style.cursor = 'default';
+                    hucre.classList.add('disabled-click');
+                    return;
+                }
+                hucre.addEventListener('click', function() {
+                    const ogrId = this.getAttribute('data-ogr-id');
+                    const tarih = this.getAttribute('data-tarih');
+                    const yeniDurum = true;
+                    fetch('/api/tik-ekle/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({
+                            ogr_id: ogrId,
+                            tarih: tarih,
+                            completed: yeniDurum
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            this.innerHTML = '🟢';
+                            this.style.cursor = 'default';
+                            this.classList.add('disabled-click');
+                        } else {
+                            alert('Hata: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fetch hatası:', error);
+                        alert('Bağlantı hatası: ' + error.message);
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+{% endblock %}

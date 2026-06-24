@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8 text-center">
+            <div class="card shadow-lg">
+                <div class="card-body py-5">
+                    <h1 class="display-4 mb-4">📖 Kuran Takip Sistemi</h1>
+                    <p class="lead mb-5">Okuma takip uygulamasına hoş geldiniz.</p>
+                    <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                        <a href="{% url 'ogrenci_giris' %}" class="btn btn-primary btn-lg px-5 py-3">
+                            🧑‍🎓 Öğrenci Girişi
+                        </a>
+                        <a href="{% url 'ogretmen_giris' %}" class="btn btn-secondary btn-lg px-5 py-3">
+                            👨‍🏫 Öğretmen Girişi
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

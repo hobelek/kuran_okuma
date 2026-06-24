@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card mt-5">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Öğrenci Girişi</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_sinif" class="form-label">Sınıf</label>
+                        <select name="sinif" id="id_sinif" class="form-select" required>
+                            <option value="">Seçiniz...</option>
+                            {% for sinif in form.sinif.field.choices %}
+                                <option value="{{ sinif.0 }}">{{ sinif.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_numara" class="form-label">Numara</label>
+                        <input type="text" name="numara" id="id_numara" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
